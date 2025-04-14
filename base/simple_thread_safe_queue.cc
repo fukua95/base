@@ -52,3 +52,7 @@ std::shared_ptr<T> ThreadSafeQueue<T>::TryPop() {
   queue_.pop();
   return res;
 }
+
+// 对于模板类，还是不做定义和实现分离，一起放在 .h 中更加方便
+// 如果实现分离到 .cc 中，需要显式实例化
+template class ThreadSafeQueue<int>;
