@@ -77,52 +77,17 @@ class ThreadSafeQueue {
  public:
   ThreadSafeQueue() {}
 
-  bool Empty() const {
-    std::lock_guard lg(mu_);
-    return queue_.empty();
-  }
+  bool Empty() const;
 
-  void Push(T value) {
-    auto data = std::make_shared<T>(std::move(value));
-    std::lock_guard lg(mu_);
-    queue_.push(data);
-    cv_.notify_one();
-  }
+  void Push(T value);
 
-  void WaitAndPop(T* value) {
-    std::unique_lock ul(mu_);
-    cv_.wait(ul, [this] { return !queue_.empty(); });
-    *value = std::move(*queue_.front());
-    queue_.pop();
-  }
+  void WaitAndPop(T* value);
 
-  std::shared_ptr<T> WaitAndPop() {
-    std::unique_lock ul(mu_);
-    cv_.wait(ul, [this] { return !queue_.empty(); });
-    auto res = queue_.front();
-    queue_.pop();
-    return res;
-  }
+  std::shared_ptr<T> WaitAndPop();
 
-  bool TryPop(T* value) {
-    std::lock_guard lg(mu_);
-    if (queue_.empty()) {
-      return false;
-    }
-    *value = std::move(*queue_.front());
-    queue_.pop();
-    return true;
-  }
+  bool TryPop(T* value);
 
-  std::shared_ptr<T> TryPop() {
-    std::lock_guard lg(mu_);
-    if (queue_.empty()) {
-      return std::shared_ptr<T>();
-    }
-    auto res = queue_.front();
-    queue_.pop();
-    return res;
-  }
+  std::shared_ptr<T> TryPop();
 
  private:
   mutable std::mutex mu_;
