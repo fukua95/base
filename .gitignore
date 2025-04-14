@@ -1,0 +1,4 @@
+# Clangd cache index
+.cache
+
+build/
