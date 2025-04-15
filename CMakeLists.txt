@@ -15,6 +15,7 @@ endif()
 set(SOURCE_FILES
     base/simple_thread_safe_queue.h
     base/simple_thread_safe_queue.cc
+    base/locked_queue.h
 )
 
 # 检查源文件是否存在
