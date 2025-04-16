@@ -4,36 +4,42 @@
 #include <memory>
 #include <mutex>
 
+#include "base/thread_safe_queue.h"
+
+// A thread-safe queue using fine-grained locks and condition variable.
 template <typename T>
-class LockedQueue {
+class LockedQueue : public ThreadSafeQueue<T> {
  public:
+  // Use a preallocated dummy node with no data to separate the node being
+  // accessed at the head from that being accessed at the tail. so there's no
+  // race on head->next and tail->next, we can use fine-grained locks.
   LockedQueue() : head_(new Node), tail_(head_.get()) {}
   LockedQueue(const LockedQueue& other) = delete;
   LockedQueue& operator=(const LockedQueue& other) = delete;
 
-  bool Empty() {
+  bool Empty() const override {
     std::lock_guard head_lock(head_mu_);
     return head_.get() == GetTail();
   }
 
-  std::shared_ptr<T> TryPop() {
+  std::shared_ptr<T> TryPop() override {
     std::unique_ptr<Node> old_head = TryPopHead();
     return old_head ? old_head->data_ : std::shared_ptr<T>();
   }
 
-  bool TryPop(T* value) {
+  bool TryPop(T* value) override {
     std::unique_ptr<Node> old_head = TryPopHead(value);
     return old_head != nullptr;
   }
 
-  std::shared_ptr<T> WaitAndPop() {
+  std::shared_ptr<T> WaitAndPop() override {
     auto old_head = WaitPopHead();
     return old_head->data_;
   }
 
-  void WaitAndPop(T* value) { WaitPopHead(value); }
+  void WaitAndPop(T* value) override { WaitPopHead(value); }
 
-  void Push(T value) {
+  void Push(T value) override {
     auto data = std::make_shared<T>(std::move(value));
     std::unique_ptr<Node> p(new Node);
 
@@ -44,6 +50,7 @@ class LockedQueue {
       tail_->next_ = std::move(p);
       tail_ = new_tail;
     }
+    // 先释放 tail_mu_, 再 notify_one(), 性能更好
     cv_.notify_one();
   }
 
@@ -53,7 +60,7 @@ class LockedQueue {
     std::unique_ptr<Node> next_;
   };
 
-  Node* GetTail() {
+  Node* GetTail() const {
     std::lock_guard tail_lg(tail_mu_);
     return tail_;
   }
@@ -99,9 +106,9 @@ class LockedQueue {
     return PopHead();
   }
 
-  std::mutex head_mu_;
+  mutable std::mutex head_mu_;
   std::unique_ptr<Node> head_;
-  std::mutex tail_mu_;
+  mutable std::mutex tail_mu_;
   Node* tail_;
   // 当只有一个节点时，head_ 和 tail_ 指向同一个节点，head_ 是 unique_ptr, 所以
   // tail 只能是裸指针，或者都为 shared_ptr.

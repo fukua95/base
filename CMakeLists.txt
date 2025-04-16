@@ -13,8 +13,9 @@ endif()
 
 # 设置源文件列表，包含 .h 和 .cc 文件
 set(SOURCE_FILES
-    base/simple_thread_safe_queue.h
-    base/simple_thread_safe_queue.cc
+    base/thread_safe_queue.h
+    base/simple_locked_queue.h
+    base/simple_locked_queue.cc
     base/locked_queue.h
 )
 
