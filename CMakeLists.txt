@@ -17,6 +17,7 @@ set(SOURCE_FILES
     base/simple_locked_queue.h
     base/simple_locked_queue.cc
     base/locked_queue.h
+    base/thread_pool.h
 )
 
 # 检查源文件是否存在
